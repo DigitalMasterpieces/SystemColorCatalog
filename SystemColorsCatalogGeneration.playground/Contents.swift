@@ -4,8 +4,13 @@ import UIKit
 
 /**
  Playground for creating an asset catalog containing all (dynamic) system colors,
- including those introduced in iOS 13, that can be used for backward compatiblity with iOS 11 and 12.
+ including those introduced in iOS 13, that can be used for backward compatibility with iOS 11 and 12.
+ It also generates a Swift file containing constants for all those colors that can also be used in iOS < 11.
 */
+
+/// Name of the generated catalog and Swift file.
+let generatedName = "SystemColors"
+
 
 // MARK: - Helpers
 
@@ -41,13 +46,13 @@ extension CGFloat {
 }
 
 
-// MARK: - Catalog Creation
-
 let fileManager = FileManager()
 let sharedDir = playgroundSharedDataDirectory
 
-let catalogName = "SystemColors"
-let catalogURL = sharedDir.appendingPathComponent("\(catalogName).xcassets", isDirectory: true)
+
+// MARK: - Catalog Creation
+
+let catalogURL = sharedDir.appendingPathComponent("\(generatedName).xcassets", isDirectory: true)
 // delete old catalog if existing
 try? fileManager.removeItem(at: catalogURL)
 // create new catalog
@@ -62,6 +67,11 @@ let contentsJSON = """
 }
 """
 try contentsJSON.write(to: catalogURL.appendingPathComponent("Contents").appendingPathExtension("json"), atomically: false, encoding: .utf8)
+
+// path to the Swift file
+let swiftFileURL = sharedDir.appendingPathComponent("\(generatedName)").appendingPathExtension("swift")
+// delete old file if existing
+try? fileManager.removeItem(at: swiftFileURL)
 
 
 // MARK: - System Colors
@@ -116,6 +126,26 @@ let darkHighContrastTrait = UITraitCollection(traitsFrom: [darkTrait, highContra
 
 // MARK: - Generation
 
+// header content of the Swift file
+var swiftFileContents = """
+import UIKit
+
+enum \(generatedName) {
+
+    /// Helper for loading a named color from an asset catalog if possible, using the fallback otherwise.
+    private static func color(named: String, fallback: UIColor) -> UIColor {
+        if #available(iOS 11.0, *) {
+            let namedColor = UIColor(named: named)
+            assert(namedColor != nil, "Failed to load color from resource bundle")
+            return namedColor ?? fallback
+        } else {
+            return fallback
+        }
+    }
+
+
+"""
+
 for (name, color) in systemColors {
     // create the different color variants based on the different traits
     let anyColor = color
@@ -125,7 +155,17 @@ for (name, color) in systemColors {
     let lightHighContrastColor = color.resolvedColor(with: lightHighContrastTrait)
     let darkHighContrastColor = color.resolvedColor(with: darkHighContrastTrait)
 
-    // write colors into color set JSON format
+    // append an entry to the Swift file's enum
+    swiftFileContents.append(
+        """
+            static var \(name): UIColor {
+                return color(named: "\(name)", fallback: #colorLiteral(red: \(anyColor.r), green: \(anyColor.g), blue: \(anyColor.b), alpha: \(anyColor.a)))
+            }
+
+        """
+    )
+
+    // write colors into color set JSON format for the asset catalog
     let colorJSON = """
     {
       "info" : {
@@ -253,6 +293,19 @@ for (name, color) in systemColors {
     try colorJSON.write(to: colorDirURL.appendingPathComponent("Contents").appendingPathExtension("json"), atomically: false, encoding: .utf8)
 }
 
+// add closing braces to Swift enum
+swiftFileContents.append(
+    """
+
+    }
+
+    """
+)
+// write Swift file
+try swiftFileContents.write(to: swiftFileURL, atomically: false, encoding: .utf8)
+
 
 print("Done. The asset catalog can be found here:")
 print(catalogURL.path)
+print("The generated Swift file is here:")
+print(swiftFileURL.path)
