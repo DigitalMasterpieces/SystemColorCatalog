@@ -1,15 +1,18 @@
 import PlaygroundSupport
 import UIKit
 
+/// Playground for creating an asset catalog containing all (dynamic) system colors,
+/// including those introduced in iOS 13, that can be used for backward compatibility with iOS 11 and 12.
+/// It also generates a Swift file containing constants for all those colors that can also be used in iOS < 11.
 
-/**
- Playground for creating an asset catalog containing all (dynamic) system colors,
- including those introduced in iOS 13, that can be used for backward compatibility with iOS 11 and 12.
- It also generates a Swift file containing constants for all those colors that can also be used in iOS < 11.
-*/
+
+// MARK: - Configuration
 
 /// Name of the generated catalog and Swift file.
 let generatedName = "SystemColors"
+
+/// If `true`, the dark variants of the system colors are used as the fallback option.
+let useDarkAsFallback = false
 
 
 // MARK: - Helpers
@@ -148,10 +151,10 @@ enum \(generatedName) {
 
 for (name, color) in systemColors {
     // create the different color variants based on the different traits
-    let anyColor = color
+    let anyColor = useDarkAsFallback ? color.resolvedColor(with: darkTrait) : color
     let lightColor = color.resolvedColor(with: lightTrait)
     let darkColor = color.resolvedColor(with: darkTrait)
-    let anyHighContrastColor = color.resolvedColor(with: highContrastTrait)
+    let anyHighContrastColor = anyColor.resolvedColor(with: highContrastTrait)
     let lightHighContrastColor = color.resolvedColor(with: lightHighContrastTrait)
     let darkHighContrastColor = color.resolvedColor(with: darkHighContrastTrait)
 

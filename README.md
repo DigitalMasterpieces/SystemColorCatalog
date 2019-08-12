@@ -26,3 +26,4 @@ label.textColor = SystemColors.label
 
 ## Generation
 The asset catalog and Swift file were generated from the actual system colors using the `SystemColorsCatalogGeneration.playground`.
+If you want to have the dark variants as default option in iOS < 13, you can change the `useDarkAsFallback` flag before running the playground. 
