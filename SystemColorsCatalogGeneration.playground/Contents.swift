@@ -162,7 +162,11 @@ for (name, color) in systemColors {
     swiftFileContents.append(
         """
             static var \(name): UIColor {
-                return color(named: "\(name)", fallback: #colorLiteral(red: \(anyColor.r), green: \(anyColor.g), blue: \(anyColor.b), alpha: \(anyColor.a)))
+                if #available(iOS 13, *) {
+                    return UIColor.\(name)
+                } else {
+                    return color(named: "\(name)", fallback: #colorLiteral(red: \(anyColor.r), green: \(anyColor.g), blue: \(anyColor.b), alpha: \(anyColor.a)))
+                }
             }
 
         """
